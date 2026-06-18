@@ -16,8 +16,8 @@ symptoms = st.text_input(
 if st.button("Analyze Patient"):
 
     response = requests.get(
-        "http://127.0.0.1:8000/predict",
-        params={"symptoms": symptoms}
+    "https://multi-agents-cdss.onrender.com/predict",
+    params={"symptoms": symptoms}
     )
 
     result = response.json()
@@ -50,8 +50,9 @@ question = st.text_input(
 if st.button("Ask RAG"):
 
     response = requests.get(
-        "http://127.0.0.1:8000/ask_rag",
-        params={"question": question}
+    "https://multi-agents-cdss.onrender.com/ask_rag",
+    params={"question": question}
+
     )
 
     result = response.json()
