@@ -9,6 +9,8 @@ st.set_page_config(
 
 st.title("🏥 Multi-Agent Clinical Decision Support System")
 
+BACKEND_URL = "https://multi-agents-cdss.onrender.com"
+
 symptoms = st.text_input(
     "Enter Symptoms (comma separated)"
 )
@@ -16,30 +18,37 @@ symptoms = st.text_input(
 if st.button("Analyze Patient"):
 
     response = requests.get(
-    "https://multi-agents-cdss.onrender.com/predict",
-    params={"symptoms": symptoms}
+        f"{BACKEND_URL}/predict",
+        params={"symptoms": symptoms}
     )
 
-    result = response.json()
+    st.write("Status Code:", response.status_code)
+    st.write("Response Text:", response.text)
 
-    st.success("Analysis Complete")
+    try:
+        result = response.json()
 
-    st.subheader("🦠 Predicted Disease")
-    st.write(result["disease"])
+        st.success("Analysis Complete")
 
-    st.subheader("📖 Description")
-    st.write(result["description"])
-    st.subheader("📊 Severity Score")
-    st.write(result["severity_score"])
+        st.subheader("🦠 Predicted Disease")
+        st.write(result["disease"])
 
-    st.subheader("🚨 Risk Level")
-    st.write(result["risk_level"])
+        st.subheader("📖 Description")
+        st.write(result["description"])
 
-    st.subheader("💊 Precautions")
+        st.subheader("📊 Severity Score")
+        st.write(result["severity_score"])
 
-    for precaution in result["precautions"]:
-        st.write("✅", precaution)
-        st.divider()
+        st.subheader("🚨 Risk Level")
+        st.write(result["risk_level"])
+
+        st.subheader("💊 Precautions")
+
+        for precaution in result["precautions"]:
+            st.write("✅", precaution)
+
+    except Exception as e:
+        st.error(f"Error: {e}")
 
 st.subheader("🤖 Ask About Disease (RAG)")
 
@@ -50,13 +59,18 @@ question = st.text_input(
 if st.button("Ask RAG"):
 
     response = requests.get(
-    "https://multi-agents-cdss.onrender.com/ask_rag",
-    params={"question": question}
-
+        f"{BACKEND_URL}/ask_rag",
+        params={"question": question}
     )
 
-    result = response.json()
+    st.write("Status Code:", response.status_code)
+    st.write("Response Text:", response.text)
 
-    st.success("RAG Answer")
+    try:
+        result = response.json()
 
-    st.write(result["answer"])
+        st.success("RAG Answer")
+        st.write(result["answer"])
+
+    except Exception as e:
+        st.error(f"Error: {e}")
