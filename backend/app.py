@@ -1,19 +1,56 @@
 from fastapi import FastAPI
-from rag.rag_agent import search_disease
 import joblib
 import pandas as pd
 
 app = FastAPI()
 
-# Load model and encoder
-model = joblib.load("models/disease_model.pkl")
-all_symptoms = joblib.load("models/symptoms.pkl")
-encoder = joblib.load("models/label_encoder.pkl")
+# Global variables
+model = None
+all_symptoms = None
+encoder = None
 
-# Load datasets
-description_df = pd.read_csv("data/symptom_Description.csv")
-precaution_df = pd.read_csv("data/symptom_precaution.csv")
-severity_df = pd.read_csv("data/Symptom-severity.csv")
+description_df = None
+precaution_df = None
+severity_df = None
+
+
+def load_resources():
+    global model
+    global all_symptoms
+    global encoder
+    global description_df
+    global precaution_df
+    global severity_df
+
+    if model is None:
+        print("Loading Disease Model...")
+        model = joblib.load("models/disease_model.pkl")
+
+    if all_symptoms is None:
+        print("Loading Symptoms...")
+        all_symptoms = joblib.load("models/symptoms.pkl")
+
+    if encoder is None:
+        print("Loading Label Encoder...")
+        encoder = joblib.load("models/label_encoder.pkl")
+
+    if description_df is None:
+        print("Loading Description Dataset...")
+        description_df = pd.read_csv(
+            "data/symptom_Description.csv"
+        )
+
+    if precaution_df is None:
+        print("Loading Precaution Dataset...")
+        precaution_df = pd.read_csv(
+            "data/symptom_precaution.csv"
+        )
+
+    if severity_df is None:
+        print("Loading Severity Dataset...")
+        severity_df = pd.read_csv(
+            "data/Symptom-severity.csv"
+        )
 
 
 @app.get("/")
@@ -26,40 +63,31 @@ def home():
 @app.get("/predict")
 def predict(symptoms: str):
 
-    # Convert user input into list
+    load_resources()
+
     user_symptoms = [
         symptom.strip()
         for symptom in symptoms.split(",")
     ]
 
-    # Create feature vector
-    input_vector = []
-
-    for symptom in all_symptoms:
-        if symptom in user_symptoms:
-            input_vector.append(1)
-        else:
-            input_vector.append(0)
+    input_vector = [
+        1 if symptom in user_symptoms else 0
+        for symptom in all_symptoms
+    ]
 
     try:
-        # XGBoost prediction
+
         prediction_encoded = int(
             model.predict([input_vector])[0]
         )
-
-        print("Prediction Encoded:", prediction_encoded)
-        print("Type:", type(prediction_encoded))
 
         prediction = encoder.inverse_transform(
             [prediction_encoded]
         )[0]
 
     except Exception as e:
-        return {
-            "error": str(e)
-        }
+        return {"error": str(e)}
 
-    # Calculate Severity Score
     severity_score = 0
 
     for symptom in user_symptoms:
@@ -73,7 +101,6 @@ def predict(symptoms: str):
                 row["weight"].values[0]
             )
 
-    # Risk Level
     if severity_score < 10:
         risk_level = "Low"
     elif severity_score < 20:
@@ -81,7 +108,6 @@ def predict(symptoms: str):
     else:
         risk_level = "High"
 
-    # Disease Description
     description_row = description_df[
         description_df["Disease"] == prediction
     ]
@@ -93,7 +119,6 @@ def predict(symptoms: str):
     else:
         description = "Description not available."
 
-    # Precautions
     precaution_row = precaution_df[
         precaution_df["Disease"] == prediction
     ]
@@ -119,6 +144,8 @@ def predict(symptoms: str):
 
 @app.get("/ask_rag")
 def ask_rag(question: str):
+
+    from rag.rag_agent import search_disease
 
     answer = search_disease(question)
 
