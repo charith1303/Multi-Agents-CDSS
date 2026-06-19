@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import joblib
 import pandas as pd
 import os
+from xgboost import XGBClassifier
 
 app = FastAPI()
 
@@ -30,14 +31,16 @@ def load_resources():
 
     if model is None:
         try:
-            model_path = "models/disease_model.pkl"
+
+            model_path = "models/disease_model.json"
 
             print("=" * 60)
             print("Loading Model From:", model_path)
             print("File Exists:", os.path.exists(model_path))
             print("=" * 60)
 
-            model = joblib.load(model_path)
+            model = XGBClassifier()
+            model.load_model(model_path)
 
             print("Disease Model Loaded Successfully")
             print("Model Type:", type(model))
