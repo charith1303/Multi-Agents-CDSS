@@ -7,70 +7,88 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🏥 Multi-Agent Clinical Decision Support System")
-
 BACKEND_URL = "https://multi-agents-cdss.onrender.com"
 
+st.title("🏥 Multi-Agent Clinical Decision Support System")
+
+# Disease Prediction
+st.header("🩺 Disease Prediction")
+
 symptoms = st.text_input(
-    "Enter Symptoms (comma separated)"
+    "Enter Symptoms (comma separated)",
+    placeholder="chills,vomiting,high_fever,sweating,headache"
 )
 
 if st.button("Analyze Patient"):
 
-    response = requests.get(
-        f"{BACKEND_URL}/predict",
-        params={"symptoms": symptoms}
-    )
+    if not symptoms.strip():
+        st.warning("Please enter symptoms.")
+    else:
 
-    st.write("Status Code:", response.status_code)
-    st.write("Response Text:", response.text)
+        try:
+            response = requests.get(
+                f"{BACKEND_URL}/predict",
+                params={"symptoms": symptoms},
+                timeout=30
+            )
 
-    try:
-        result = response.json()
+            result = response.json()
 
-        st.success("Analysis Complete")
+            if "error" in result:
+                st.error(result["error"])
 
-        st.subheader("🦠 Predicted Disease")
-        st.write(result["disease"])
+            else:
+                st.success("Analysis Complete")
 
-        st.subheader("📖 Description")
-        st.write(result["description"])
+                st.subheader("🦠 Predicted Disease")
+                st.write(result["disease"])
 
-        st.subheader("📊 Severity Score")
-        st.write(result["severity_score"])
+                st.subheader("📖 Description")
+                st.write(result["description"])
 
-        st.subheader("🚨 Risk Level")
-        st.write(result["risk_level"])
+                st.subheader("📊 Severity Score")
+                st.write(result["severity_score"])
 
-        st.subheader("💊 Precautions")
+                st.subheader("🚨 Risk Level")
+                st.write(result["risk_level"])
 
-        for precaution in result["precautions"]:
-            st.write("✅", precaution)
+                st.subheader("💊 Precautions")
 
-    except Exception as e:
-        st.error(f"Error: {e}")
+                for precaution in result["precautions"]:
+                    st.write("✅", precaution)
 
-st.subheader("🤖 Ask About Disease (RAG)")
+        except Exception as e:
+            st.error(f"Connection Error: {e}")
+
+# RAG Section
+st.header("🤖 Ask Disease Knowledge Base")
 
 question = st.text_input(
-    "Ask a question"
+    "Ask a disease-related question",
+    placeholder="What is malaria?"
 )
 
 if st.button("Ask RAG"):
 
-    response = requests.get(
-        f"{BACKEND_URL}/ask_rag",
-        params={"question": question}
-    )
+    if not question.strip():
+        st.warning("Please enter a question.")
+    else:
 
-    st.write("Status Code:", response.status_code)
-    st.write("Response Text:", response.text)
+        try:
+            response = requests.get(
+                f"{BACKEND_URL}/ask_rag",
+                params={"question": question},
+                timeout=60
+            )
 
-    try:
-        result = response.json()
+            result = response.json()
 
-        st.success("RAG Answer")
-        st.write(result["answer"])
+            if "error" in result:
+                st.error(result["error"])
 
-    except Exception as e:
-        st.error(f"Error: {e}")
+            else:
+                st.success("Answer Found")
+                st.write(result["answer"])
+
+        except Exception as e:
+            st.error(f"Connection Error: {e}")
